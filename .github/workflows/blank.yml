@@ -1,0 +1,38 @@
+# This workflow sets up new Internal and Customer escalation issues.
+
+name: New Issue Setup
+
+on:
+  # Trigger the workflow when an issue is labeled.
+  issues:
+    types: [labeled]
+
+permissions:
+  issues: write
+
+jobs:
+  add-checklist:
+    # Only run if the new label is an escalation label.
+    if: ${{ github.event.label.name == 'Internal escalation' || github.event.label.name == 'Customer escalation' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: peter-evans/find-comment@1769778a0c5bd330272d749d12c036d65e70d39d
+        id: fc
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          comment-author: github-actions[bot]
+          body-includes: '## Checklist for this issue'
+      - name: Add checklist to issue
+        # Only run if find-comment DID NOT find a comment.
+        if: ${{ steps.fc.outputs.comment-id == 0 }}
+        id: prcomment
+        uses: peter-evans/create-or-update-comment@c9fcb64660bc90ec1cc535646af190c992007c32
+        with:
+          issue-number: ${{ github.event.issue.number }}
+          # TODO: Probably move the checklist to a file.
+          body: |
+            ## Checklist for this issue
+            
+            - [x] Create this issue
+            - [ ] TODO: What else goes on this checklist?
+            - [ ] [Retrospective]()
