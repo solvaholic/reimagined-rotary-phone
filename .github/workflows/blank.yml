@@ -16,6 +16,14 @@ jobs:
     if: ${{ github.event.label.name == 'Internal escalation' || github.event.label.name == 'Customer escalation' }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
+      - id: get-checklist
+        run: |
+          body="$(cat docs/incident_checklist.md)"
+          body="${body//'%'/'%25'}"
+          body="${body//$'\n'/'%0A'}"
+          body="${body//$'\r'/'%0D'}" 
+          echo "::set-output name=body::$body"
       - uses: peter-evans/find-comment@1769778a0c5bd330272d749d12c036d65e70d39d
         id: fc
         with:
@@ -30,9 +38,4 @@ jobs:
         with:
           issue-number: ${{ github.event.issue.number }}
           # TODO: Probably move the checklist to a file.
-          body: |
-            ## Checklist for this issue
-            
-            - [x] Create this issue
-            - [ ] TODO: What else goes on this checklist?
-            - [ ] [Retrospective]()
+          body: ${{ steps.get-checklist.outputs.body }}
