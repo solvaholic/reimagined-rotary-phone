@@ -1,41 +1,35 @@
-# This workflow sets up new Internal and Customer escalation issues.
+# This workflow marks issues that have not had recent interaction.
 
-name: New Issue Setup
+name: 'Close stale issues and PRs'
 
 on:
-  # Trigger the workflow when an issue is labeled.
-  issues:
-    types: [labeled]
+  schedule:
+    - cron: '*/15 * * * *'
 
 permissions:
   issues: write
+  pull-requests: write
 
 jobs:
-  add-checklist:
-    # Only run if the new label is an escalation label.
-    if: ${{ github.event.label.name == 'Internal escalation' || github.event.label.name == 'Customer escalation' }}
+  stale-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b
-      - id: get-checklist
-        run: |
-          body="$(cat docs/incident_checklist.md)"
-          body="${body//'%'/'%25'}"
-          body="${body//$'\n'/'%0A'}"
-          body="${body//$'\r'/'%0D'}" 
-          echo "::set-output name=body::$body"
-      - uses: peter-evans/find-comment@1769778a0c5bd330272d749d12c036d65e70d39d
-        id: fc
+      - uses: actions/stale@532554b8a8498a0e006fbcde824b048728c4178f
         with:
-          issue-number: ${{ github.event.issue.number }}
-          comment-author: github-actions[bot]
-          body-includes: '## Checklist for this issue'
-      - name: Add checklist to issue
-        # Only run if find-comment DID NOT find a comment.
-        if: ${{ steps.fc.outputs.comment-id == 0 }}
-        id: prcomment
-        uses: peter-evans/create-or-update-comment@c9fcb64660bc90ec1cc535646af190c992007c32
-        with:
-          issue-number: ${{ github.event.issue.number }}
-          # TODO: Probably move the checklist to a file.
-          body: ${{ steps.get-checklist.outputs.body }}
+          # Run in debug-only, or dry run mode?
+          debug-only: true
+          # How many days of in activity, before stale or close?
+          days-before-stale: 30
+          days-before-close: 14
+          # This Action adds the 'stale' label to stale issues.
+          stale-issue-label: stale
+          # If an issue has the 'keep' label, keep it.
+          exempt-issue-labels: keep
+          # Write this message to the issue when it is marked stale.
+          stale-issue-message: |
+            This issue has been automatically marked as stale because it has not had
+            recent activity. It will be closed if no further activity occurs. Use
+            the label `keep` to prevent issues from being marked stale.
+          #stale-pr-message: |
+          # Because stale-pr-message is not provided, PRs will not
+          # be marked stale.
